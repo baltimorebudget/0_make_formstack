@@ -10,7 +10,7 @@ devtools::load_all("G:/Analyst Folders/Sara Brumfield/bbmR")
 
 ##get updated lists of agencies and analysts ===============
 analysts <- import("G:/Analyst Folders/Sara Brumfield/_ref/Analyst Assignments.xlsx") %>%
-  filter(Operational == TRUE) %>%
+  # filter(Operational == TRUE) %>%
   select(`Agency ID`, `Agency Name`, `Agency Name - Cleaned`)  %>%
   mutate(`Agency ID` = as.character(`Agency ID`)) 
 
@@ -72,7 +72,7 @@ url <- paste0("https://www.formstack.com/api/v2/form/", form_id, "/field.json")
 api2 <- GET(paste0("https://www.formstack.com/api/v2/form.json?oauth_token=", key))
 http_status(api2)
 headers(api2)
-content(api2, "text")
+# content(api2, "text")
 
 
 for (a in agencies2) {
@@ -117,7 +117,7 @@ for (a in agencies2) {
        encode = "json")
 }
 
-field_id2 = 132366979
+field_id2 = 132448830
 for (s in services) {
   df <- data %>% 
     filter(`Service` == s) 
