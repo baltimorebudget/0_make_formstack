@@ -6,66 +6,84 @@ library(openxlsx)
 library(readxl)
 library(httr)
 
-devtools::load_all("G:/Analyst Folders/Sara Brumfield/bbmR")
+devtools::load_all("G:/Analyst Folders/Sara Brumfield/_packages/bbmR")
 
 ##get updated lists of agencies and analysts ===============
-analysts <- import("G:/Analyst Folders/Sara Brumfield/_ref/Analyst Assignments.xlsx") %>%
-  # filter(Operational == TRUE) %>%
-  select(`Agency ID`, `Agency Name`, `Agency Name - Cleaned`)  %>%
-  mutate(`Agency ID` = as.character(`Agency ID`)) 
-
-agencies <- analysts %>%
-  select(`Agency Name`) %>%
-  unique() %>%
-  arrange(`Agency Name`) %>%
-  filter(!is.na(`Agency Name`))
-
-agencies %>%
-  export_excel("FY23 Agency", "outputs/List of FY24 Agencies.xlsx")
+# analysts <- import("G:/Analyst Folders/Sara Brumfield/_ref/Analyst Assignments.xlsx") %>%
+#   # filter(Operational == TRUE) %>%
+#   select(`Agency ID`, `Agency Name`, `Agency Name - Cleaned`)  %>%
+#   mutate(`Agency ID` = as.character(`Agency ID`)) 
+# 
+# agencies <- analysts %>%
+#   select(`Agency Name`) %>%
+#   unique() %>%
+#   arrange(`Agency Name`) %>%
+#   filter(!is.na(`Agency Name`))
+# 
+# agencies %>%
+#   export_excel("FY23 Agency", "outputs/List of FY24 Agencies.xlsx")
 
 
 ##get updated services ================
-planning <- read_xlsx("G:/Fiscal Years/Fiscal 2024/Planning Year/1. CLS/1. Line Item Reports/line_items_2022-09-16_CLS_After_186.xlsx",
-                      sheet = "Details")
+# planning <- read_xlsx("G:/Fiscal Years/Fiscal 2024/Planning Year/1. CLS/1. Line Item Reports/line_items_2022-09-16_CLS_After_186.xlsx",
+#                       sheet = "Details")
+# 
+# svc <- planning %>%
+#   mutate(`Service` = paste0(`Program ID`, "-", `Program Name`)) %>%
+#   select(`Agency Name`, `Service`) %>%
+#   unique() %>%
+#   arrange(`Agency Name`, `Service`) %>%
+#   filter(!is.na(`Agency Name`))
+# 
+# export_excel(svc, "FY24 Services", "FY24 Service List.xlsx")
+# 
+# act <- planning %>%
+#   mutate(`Activity` = paste0(`Activity ID`, "-", `Activity Name`),
+#          `Service` = paste0(`Program ID`, "-", `Program Name`)) %>%
+#   select(`Agency Name`, `Service`, `Activity`) %>%
+#   unique() %>%
+#   arrange(`Agency Name`, `Service`, `Activity`) %>%
+#   filter(!is.na(`Agency Name`))
 
-svc <- planning %>%
-  mutate(`Service` = paste0(`Program ID`, "-", `Program Name`)) %>%
-  select(`Agency Name`, `Service`) %>%
-  unique() %>%
-  arrange(`Agency Name`, `Service`) %>%
-  filter(!is.na(`Agency Name`))
 
-export_excel(svc, "FY24 Services", "FY24 Service List.xlsx")
+##workday cost center hierarchy
+cc_hier <- read_xlsx("G:/Analyst Folders/Sara Brumfield/_ref/Cost Center Hierarchy.xlsx", 
+                  col_types = c("column5"="text")) 
 
-act <- planning %>%
-  mutate(`Activity` = paste0(`Activity ID`, "-", `Activity Name`),
-         `Service` = paste0(`Program ID`, "-", `Program Name`)) %>%
-  select(`Agency Name`, `Service`, `Activity`) %>%
-  unique() %>%
-  arrange(`Agency Name`, `Service`, `Activity`) %>%
-  filter(!is.na(`Agency Name`))
+cc_hier <- cc_hier %>%
+  group_by(Agency, Service, `Cost Center`) %>%
+  summarise(n()) %>%
+  ungroup() %>%
+  select(-`n()`)
 
 ##create drop-down values ================
-expend <- read_xlsx("G:/Fiscal Years/Fiscal 2022/Projections Year/2. Monthly Expenditure Data/Month 12_June Projections/Expenditure 2022-06_Run7.xlsx") %>%
-  distinct(`Agency Name`, `Program ID`, `Program Name`,
-           `Activity ID`, `Activity Name`) %>%
-  mutate(`Service` = paste0(`Program ID`, "-", `Program Name`),
-         `Activity ID` = str_pad(`Activity ID`, width = 2, "left", "0"),
-         `Activity` = paste0(`Activity ID`, "-", `Activity Name`)) %>%
-  select(`Agency Name`, `Service`, `Activity`) %>%
-  distinct()
+# expend <- read_xlsx("G:/Fiscal Years/Fiscal 2022/Projections Year/2. Monthly Expenditure Data/Month 12_June Projections/Expenditure 2022-06_Run7.xlsx") %>%
+#   distinct(`Agency Name`, `Program ID`, `Program Name`,
+#            `Activity ID`, `Activity Name`) %>%
+#   mutate(`Service` = paste0(`Program ID`, "-", `Program Name`),
+#          `Activity ID` = str_pad(`Activity ID`, width = 2, "left", "0"),
+#          `Activity` = paste0(`Activity ID`, "-", `Activity Name`)) %>%
+#   select(`Agency Name`, `Service`, `Activity`) %>%
+#   distinct()
 
 ##need to filter out non-operational agencies
-data <- right_join(expend, agencies) %>% filter(!is.na(Service))
+# data <- right_join(expend, agencies) %>% filter(!is.na(Service))
 
-agencies2 <- unique(data$`Agency Name`)
+agencies <- unique(cc_hier$`Agency`)
 
-services <- unique(data$Service)
+services <- unique(cc_hier$Service)
+
+cost_centers <- unique(cc_hier$`Cost Center`)
+
+export_excel(data.frame(agencies), "Agencies", "Agencies.xlsx")
+
+export_excel(data.frame(services), "Services", "Services.xlsx")
+
 
 ##push drop-down values to Formstack via API ============
 api <- bbmR::connect_fs_api()
-form_id = 5008440
-field_id = 132361438
+form_id = 5358090
+field_id = 147791670
 key = "7cf3e390462e4e0882dcc5df52a73d69"
 url <- paste0("https://www.formstack.com/api/v2/form/", form_id, "/field.json")
 
@@ -75,9 +93,9 @@ headers(api2)
 # content(api2, "text")
 
 
-for (a in agencies2) {
-  df <- data %>% 
-    filter(`Agency Name` == a) 
+for (a in agencies) {
+  df <- cc_hier %>% 
+    filter(`Agency` == a) 
   
   # response <- VERB("POST", url, body = list(id = form_id,
   #                                           field_type = "select",
@@ -102,8 +120,8 @@ for (a in agencies2) {
        accept("application/json"),
        body = list(id = form_id,
                    field_type = "select",
-                   label = paste(a, ": Service to remove, rename or convert"),
-                   options = as.list(c(NA, sort(unique(df$`Service`)))),
+                   label = paste(a, ": Cost Center"),
+                   options = as.list(c(NA, sort(unique(df$`Cost Center`)))),
                    required = 0,
                    logic = list(
                      action = "show",
