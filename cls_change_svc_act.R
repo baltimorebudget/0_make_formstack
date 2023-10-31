@@ -47,27 +47,15 @@ devtools::load_all("G:/Analyst Folders/Sara Brumfield/_packages/bbmR")
 
 
 ##workday cost center hierarchy
-cc_hier <- read_xlsx("G:/Analyst Folders/Sara Brumfield/_ref/Cost Center Hierarchy.xlsx", 
-                  col_types = c("column5"="text")) 
+cc_hier <- read_xlsx("C:/Users/sara.brumfield2/OneDrive - City Of Baltimore/_Code/_ref/Cost Center Hierarchy.xlsx") %>%
+  select(`Reference ID`, `Cost Center`, Name, Agency, Service, Inactive, `Capital Project`) %>%
+  filter(`Capital Project` == "No" & is.na(Inactive))
 
 cc_hier <- cc_hier %>%
   group_by(Agency, Service, `Cost Center`) %>%
   summarise(n()) %>%
   ungroup() %>%
   select(-`n()`)
-
-##create drop-down values ================
-# expend <- read_xlsx("G:/Fiscal Years/Fiscal 2022/Projections Year/2. Monthly Expenditure Data/Month 12_June Projections/Expenditure 2022-06_Run7.xlsx") %>%
-#   distinct(`Agency Name`, `Program ID`, `Program Name`,
-#            `Activity ID`, `Activity Name`) %>%
-#   mutate(`Service` = paste0(`Program ID`, "-", `Program Name`),
-#          `Activity ID` = str_pad(`Activity ID`, width = 2, "left", "0"),
-#          `Activity` = paste0(`Activity ID`, "-", `Activity Name`)) %>%
-#   select(`Agency Name`, `Service`, `Activity`) %>%
-#   distinct()
-
-##need to filter out non-operational agencies
-# data <- right_join(expend, agencies) %>% filter(!is.na(Service))
 
 agencies <- unique(cc_hier$`Agency`)
 
