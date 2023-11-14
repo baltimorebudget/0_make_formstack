@@ -32,16 +32,15 @@ export_excel(data.frame(services), "Services", "Services.xlsx")
 
 ##push drop-down values to Formstack via API ============
 api <- bbmR::connect_fs_api()
-form_id = 5508140
-field_id = 153957687
+form_id = 5522385
+field_id = 154538123
 key = "7cf3e390462e4e0882dcc5df52a73d69"
 url <- paste0("https://www.formstack.com/api/v2/form/", form_id, "/field.json")
 
 api2 <- GET(paste0("https://www.formstack.com/api/v2/form.json?oauth_token=", key))
-http_status(api2)
+http_status(api2)$message
 headers(api2)
 # content(api2, "text")
-
 
 for (a in agencies) {
   df <- cc_hier %>% 
@@ -85,7 +84,7 @@ for (a in agencies) {
        encode = "json")
 }
 
-
+##job classifications by union drop-down =========
 classes <- import("C:/Users/sara.brumfield2/OneDrive - City Of Baltimore/_Code/_ref/Job_Classifications.xlsx")
 
 classes <- classes %>%
