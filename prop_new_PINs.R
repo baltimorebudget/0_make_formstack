@@ -32,8 +32,8 @@ export_excel(data.frame(services), "Services", "Services.xlsx")
 
 ##push drop-down values to Formstack via API ============
 api <- bbmR::connect_fs_api()
-form_id = 5522385
-field_id = 154538123
+form_id = 5527320
+field_id = 154765923
 key = "7cf3e390462e4e0882dcc5df52a73d69"
 url <- paste0("https://www.formstack.com/api/v2/form/", form_id, "/field.json")
 
@@ -69,8 +69,8 @@ for (a in agencies) {
        accept("application/json"),
        body = list(id = form_id,
                    field_type = "select",
-                   label = paste(a, ": Cost Center"),
-                   options = as.list(c(NA, sort(unique(df$`Cost Center`)))),
+                   label = paste(a, ": Service"),
+                   options = as.list(c(NA, sort(unique(df$`Service`)))),
                    required = 0,
                    logic = list(
                      action = "show",
